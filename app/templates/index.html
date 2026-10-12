@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prédiction valve</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f4f6f9; color: #1d2733; margin: 0; }
+    main { max-width: 560px; margin: 48px auto; padding: 0 16px; }
+    .card { background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,.06); margin-bottom: 16px; }
+    h1 { font-size: 1.4rem; margin: 0 0 4px; }
+    p.sub { color: #5b6775; margin: 0 0 20px; }
+    form { display: flex; gap: 8px; }
+    input { flex: 1; padding: 10px 12px; font-size: 1rem; border: 1px solid #c9d1db; border-radius: 8px; }
+    button { padding: 10px 18px; font-size: 1rem; border: 0; border-radius: 8px; background: #2f6fd0; color: #fff; cursor: pointer; }
+    .badge { display: inline-block; padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: 1.1rem; }
+    .ok { background: #dff3e6; color: #1e7a42; } .ko { background: #fbe3e2; color: #a83a36; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    td { padding: 6px 0; border-bottom: 1px solid #eef1f5; } td:last-child { text-align: right; font-weight: 500; }
+    .err { color: #a83a36; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <h1>Condition de la valve</h1>
+    <p class="sub">Entrez un numéro de cycle (1 à {{ n_cycles }}) pour savoir si la valve est prédite optimale (100 %).</p>
+    <form method="get">
+      <input name="cycle" type="number" min="1" max="{{ n_cycles }}" placeholder="ex. 2050" value="{{ cycle }}" required>
+      <button type="submit">Prédire</button>
+    </form>
+    {% if error %}<p class="err">{{ error }}</p>{% endif %}
+  </div>
+  {% if result %}
+  <div class="card">
+    <span class="badge {{ 'ok' if result.prediction == 'optimale' else 'ko' }}">Valve {{ result.prediction }}</span>
+    <table>
+      <tr><td>Cycle</td><td>{{ result.cycle }} ({{ result.jeu }})</td></tr>
+      <tr><td>Probabilité « optimale »</td><td>{{ '%.1f' % (100 * result.proba_optimale) }} %</td></tr>
+      <tr><td>Condition réelle</td><td>{{ result.valve_reelle_pct }} % ({{ result.verite }})</td></tr>
+      <tr><td>Prédiction correcte</td><td>{{ 'oui' if result.correct else 'non' }}</td></tr>
+      <tr><td>Modèle</td><td>{{ result.modele }}</td></tr>
+    </table>
+  </div>
+  {% endif %}
+</main>
+</body>
+</html>

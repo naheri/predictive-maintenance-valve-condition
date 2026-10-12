@@ -1,0 +1,9 @@
+data/*.txt
+__pycache__/
+.ipynb_checkpoints/
+rapport/*.aux
+rapport/*.log
+rapport/*.out
+rapport/*.toc
+rapport/*.lof
+rapport/*.lot

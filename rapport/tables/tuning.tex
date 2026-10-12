@@ -1,0 +1,13 @@
+\begin{tabular}{lrrrrr}
+\toprule
+Modèle & Méthode & Comb. & AUC avant & AUC après & Temps (s) \\
+\midrule
+Régression logistique & Grid & 60 & 1.000 & 1.000 & 0.735 \\
+k-NN & Grid & 168 & 0.999 & 1.000 & 1.991 \\
+Arbre de décision & Grid & 240 & 0.986 & 0.999 & 3.287 \\
+Naive Bayes & Grid & 54 & 0.976 & 0.976 & 0.546 \\
+SVM (RBF) & Grid & 96 & 1.000 & 1.000 & 8.834 \\
+Random Forest & Random & 40 & 1.000 & 1.000 & 28.524 \\
+Gradient Boosting & Random & 40 & 1.000 & 1.000 & 68.089 \\
+\bottomrule
+\end{tabular}

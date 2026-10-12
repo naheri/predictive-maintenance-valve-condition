@@ -1,0 +1,733 @@
+% =====================================================================
+%  Rapport technique : maintenance prédictive d'un banc hydraulique
+%  Compilation : pdflatex rapport.tex (deux fois, pour la table des matières)
+%
+%  - Les figures de rapport/figures/ et les tableaux de rapport/tables/ sont
+%    produits automatiquement par le notebook (notebooks/projet_valve.ipynb).
+%  - Les captures d'écran à faire soi-même vont dans rapport/captures/ avec le
+%    nom indiqué dans chaque cadre « CAPTURE À INSÉRER ». Dès que le fichier
+%    existe, il remplace automatiquement le cadre.
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{csquotes}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+
+\graphicspath{{figures/}{captures/}}
+\captionsetup{font=small,labelfont=bf}
+\setlength{\parskip}{0.45em}
+\setlength{\parindent}{0pt}
+
+\definecolor{placeholder}{RGB}{214,83,64}
+\definecolor{codebg}{RGB}{246,247,249}
+\lstset{basicstyle=\ttfamily\small,backgroundcolor=\color{codebg},frame=single,rulecolor=\color{gray!40},
+        breaklines=true,columns=fullflexible,keepspaces=true,showstringspaces=false,
+        literate={é}{{\'e}}1 {è}{{\`e}}1 {à}{{\`a}}1 {ç}{{\c{c}}}1 {ê}{{\^e}}1 {É}{{\'E}}1 {ô}{{\^o}}1 {«}{{\guillemotleft}}1 {»}{{\guillemotright}}1}
+
+% ---------------------------------------------------------------------
+%  Résultats chiffrés exportés par le notebook (valeurs « ?? » sinon)
+% ---------------------------------------------------------------------
+\InputIfFileExists{tables/resultats.tex}{}{%
+  \typeout{ATTENTION : tables/resultats.tex absent, exécutez le notebook.}}
+\providecommand{\resnOutlierCycles}{??}\providecommand{\restrainPosPct}{??}
+\providecommand{\restestPosPct}{??}\providecommand{\resnTest}{??}\providecommand{\resnTestPos}{??}
+\providecommand{\resnFeatures}{??}\providecommand{\respctHighCorrPairs}{??}\providecommand{\resnAfterCorr}{??}
+\providecommand{\resnLNonZero}{??}\providecommand{\reskDefault}{??}\providecommand{\resfinalModel}{??}
+\providecommand{\resfinalCvAuc}{??}\providecommand{\resfinalCvFone}{??}\providecommand{\resfinalCvAcc}{??}
+\providecommand{\restestAccuracy}{??}\providecommand{\restestPrecision}{??}\providecommand{\restestRecall}{??}
+\providecommand{\restestFone}{??}\providecommand{\restestRocauc}{??}\providecommand{\restestTN}{??}
+\providecommand{\restestFP}{??}\providecommand{\restestFN}{??}\providecommand{\restestTP}{??}
+\providecommand{\resnTestErrors}{??}\providecommand{\resnFinalFeatures}{??}
+\providecommand{\resriseHundred}{??}\providecommand{\resriseNinety}{??}\providecommand{\resriseEighty}{??}
+\providecommand{\resriseSeventythree}{??}\providecommand{\resdelayNinetyMs}{??}
+\providecommand{\resoneFeatTestAcc}{??}\providecommand{\resoneFeatTestFone}{??}
+
+% ---------------------------------------------------------------------
+%  Figures générées et captures d'écran (cadre de remplacement si absentes)
+% ---------------------------------------------------------------------
+% \placeholderbox{nom}{description de ce qu'il faut capturer}{hauteur}
+\newcommand{\placeholderbox}[3]{%
+  \begin{tcolorbox}[colback=placeholder!6,colframe=placeholder,arc=2mm,boxrule=0.9pt,
+                    height=#3,valign=center,halign=center,width=0.92\linewidth]
+    {\color{placeholder}\bfseries\large CAPTURE À INSÉRER}\\[0.4em]
+    \small #2\\[0.5em]
+    \footnotesize\ttfamily fichier attendu : rapport/captures/\detokenize{#1}.png
+  \end{tcolorbox}}
+
+% \capture{nom}{légende}{instruction}{hauteur}
+\newcommand{\capture}[4]{%
+  \begin{figure}[H]\centering
+    \IfFileExists{captures/#1.png}{\includegraphics[width=0.92\linewidth,height=#4,keepaspectratio]{captures/#1.png}}%
+      {\placeholderbox{#1}{#3}{#4}}
+    \caption{#2}\label{fig:#1}
+  \end{figure}}
+
+% \figgen{nom}{légende}{largeur} : figure produite par le notebook
+\newcommand{\figgen}[3]{%
+  \begin{figure}[H]\centering
+    \IfFileExists{figures/#1.png}{\includegraphics[width=#3\linewidth]{figures/#1.png}}%
+      {\fbox{\parbox{0.8\linewidth}{\centering\vspace{1.5cm}Figure \texttt{figures/#1.png} :
+       exécuter le notebook pour la générer.\vspace{1.5cm}}}}
+    \caption{#2}\label{fig:#1}
+  \end{figure}}
+
+% \tabgen{fichier}{légende}{label}
+\newcommand{\tabgen}[3]{%
+  \begin{table}[H]\centering\small
+    \caption{#2}\label{tab:#3}
+    \IfFileExists{tables/#1.tex}{\resizebox{\ifdim\width>\linewidth\linewidth\else\width\fi}{!}{\input{tables/#1.tex}}}%
+      {\fbox{Tableau \texttt{tables/#1.tex} : exécuter le notebook.}}
+  \end{table}}
+
+\pagestyle{fancy}\fancyhf{}
+\lhead{\small Projet de Machine Learning}\rhead{\small Maintenance prédictive -- valve}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% =====================================================================
+\begin{document}
+
+% ------------------------------ Page de garde ------------------------
+\begin{titlepage}
+  \centering
+  {\large EFREI Paris -- ING2 BDML \par}
+  {\large Machine Learning I -- Année universitaire 2026/2027\par}
+  \vspace{3cm}
+  {\rule{\linewidth}{0.6pt}\par\vspace{0.6cm}}
+  {\Huge\bfseries Maintenance prédictive d'un banc hydraulique\par}
+  \vspace{0.4cm}
+  {\Large Prédiction de l'état optimal de la valve à partir des signaux de pression et de débit\par}
+  \vspace{0.6cm}
+  {\rule{\linewidth}{0.6pt}\par}
+  \vspace{2.5cm}
+  {\large Rapport technique\par}
+  \vspace{1.5cm}
+  {\large\textbf{[NOM Prénom -- à compléter]}\par
+          \textbf{[NOM Prénom -- à compléter]}\par
+          Groupe : \textbf{[à compléter]}\par}
+  \vspace{1.5cm}
+  {Enseignants : Ahmed Ghazi, Blaiech, Ahmad Tay, Hassan Shraim\par}
+  \vfill
+  {\large [Date de rendu -- à compléter]\par}
+\end{titlepage}
+
+% ------------------------------ Résumé -------------------------------
+\begin{abstract}
+Ce projet construit un système de maintenance prédictive pour un banc d'essai hydraulique :
+pour chaque cycle de production de 60 secondes, il prédit si la valve fonctionne de façon
+optimale (condition = 100\,\%) ou non. Les seules données utilisées sont la pression PS2
+(100\,Hz), le débit FS1 (10\,Hz) et le fichier des conditions \texttt{profile.txt}. Après un
+contrôle de qualité des données, chaque cycle est résumé par \resnFeatures{} caractéristiques
+physiques (statistiques globales, dynamique, fenêtres temporelles, énergie spectrale), puis
+une sélection de variables est apprise à l'intérieur de pipelines \texttt{scikit-learn}.
+Neuf familles de modèles sont comparées en validation croisée stratifiée, optimisées par
+Grid Search et Random Search, puis le modèle retenu (\resfinalModel) est évalué une seule fois
+sur les \resnTest{} derniers cycles : accuracy \restestAccuracy, F1 \restestFone, AUC
+\restestRocauc. L'AUC parfaite montre que le modèle classe correctement tous les cycles,
+mais son seuil de décision est décalé par un changement de distribution entre
+entraînement et test : toutes ses erreurs sont des valves à 90\,\% prédites optimales, alors
+que les modèles non linéaires (SVM, forêt aléatoire, gradient boosting) atteignent 100\,\%
+sur le test. L'analyse des variables identifie la cause physique d'une valve non optimale :
+un \textbf{retard de la montée en pression} vers 9,4\,s dans le cycle (\resdelayNinetyMs\,ms dès
+le niveau 90\,\%). Les bonus réalisés sont présentés (tests unitaires, conteneur Docker,
+application web).
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% =====================================================================
+\section{Introduction}
+
+\subsection{Contexte et objectif}
+L'usine souhaite détecter au plus tôt la dégradation de ses machines et comprendre pourquoi la
+condition de la valve d'un cycle de production est parfois non optimale. On dispose pour cela
+du jeu de données public \emph{Condition monitoring of hydraulic systems}
+(UCI, Helwig et al., 2015), obtenu sur un banc d'essai composé d'un circuit principal de
+travail et d'un circuit secondaire de refroidissement-filtration reliés par le réservoir
+d'huile. Le banc répète des cycles de charge constants de 60\,s pendant lesquels l'état de
+quatre composants (refroidisseur, valve, pompe, accumulateur) est volontairement dégradé.
+
+\textbf{Objectif.} Construire un modèle de classification binaire qui prédit, pour chaque
+cycle, si la condition de la valve est optimale (100\,\%) ou non. Les \textbf{2000 premiers
+cycles} servent à construire le modèle ; les \textbf{\resnTest{} cycles restants} (2001 à 2205)
+forment l'échantillon de test final.
+
+\subsection{Données utilisées}
+Conformément aux consignes, seuls trois fichiers sont utilisés (tableau~\ref{tab:capteurs}),
+chaque ligne correspondant à un cycle.
+
+\begin{table}[H]\centering\small
+\caption{Fichiers utilisés.}\label{tab:capteurs}
+\begin{tabular}{llllr}
+\toprule
+Fichier & Grandeur & Unité & Échantillonnage & Colonnes / cycle\\
+\midrule
+\texttt{PS2.txt} & Pression & bar & 100 Hz & 6000\\
+\texttt{FS1.txt} & Débit volumique & l/min & 10 Hz & 600\\
+\texttt{profile.txt} & Conditions des composants & -- & 1 par cycle & 5\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Les colonnes de \texttt{profile.txt} sont : condition du refroidisseur (3, 20, 100\,\%),
+\textbf{condition de la valve} (100\,\% : commutation optimale ; 90\,\% : léger retard ;
+80\,\% : retard important ; 73\,\% : proche de la panne), fuite interne de la pompe (0, 1, 2),
+pression de l'accumulateur (130, 115, 100, 90 bar) et un indicateur de stabilité (0 : conditions
+stables ; 1 : régime statique peut-être pas encore atteint).
+
+\subsection{Organisation du code}
+Le travail est entièrement reproductible :
+\begin{itemize}[nosep]
+  \item \texttt{notebooks/projet\_valve.ipynb} : notebook complet (toutes les étapes, figures et tableaux) ;
+  \item \texttt{valve\_ml/} : module Python (chargement, extraction de caractéristiques, sélection, modèles),
+        réutilisé par les tests et l'application ;
+  \item \texttt{tests/}, \texttt{Dockerfile}, \texttt{app/} : bonus (section~\ref{sec:bonus}).
+\end{itemize}
+Les figures et tableaux de ce rapport sont exportés automatiquement par le notebook, ce qui
+garantit que les chiffres cités correspondent exactement à l'exécution.
+
+\capture{notebook_apercu}{Aperçu du notebook dans Jupyter.}
+  {Capture du haut du notebook ouvert dans Jupyter/Colab (titre, plan et cellule d'imports).}{6cm}
+
+% =====================================================================
+\section{Prétraitement des données}
+
+\subsection{Chargement et statistiques descriptives}
+Les trois fichiers sont lus avec \texttt{pandas} (séparateur tabulation, sans en-tête). On
+obtient deux matrices de signaux de dimensions $2205\times6000$ (PS2) et $2205\times600$ (FS1) et
+un tableau $2205\times5$ pour les conditions. Le nombre de cycles est vérifié identique dans les
+trois fichiers.
+
+\capture{stats_descriptives}{Statistiques descriptives des signaux et des conditions (sortie du notebook).}
+  {Capture des sorties des cellules « 1.2 Statistiques descriptives » : tableau PS2/FS1 et \texttt{profile.describe()}.}{6.5cm}
+
+La pression PS2 varie fortement à l'intérieur d'un cycle (montées et descentes de charge),
+alors que le débit FS1 présente des paliers entrecoupés de transitoires rapides
+(figure~\ref{fig:exemples_cycles}). Les conditions des composants sont des niveaux discrets
+fixés par le plan d'expérience.
+
+\subsection{Valeurs manquantes et valeurs aberrantes}
+Le contrôle qualité porte sur les valeurs manquantes, les valeurs infinies, les valeurs
+physiquement impossibles (pression ou débit négatifs), les cycles constants (capteur figé) et
+les lignes dupliquées.
+
+\capture{qualite_donnees}{Contrôle de qualité des données (sortie du notebook).}
+  {Capture du tableau « NaN / inf / valeurs < 0 / cycles constants / lignes dupliquées » et du tableau de détection des valeurs aberrantes (section 1.3).}{5.5cm}
+
+Aucune valeur manquante ni infinie n'est présente : aucune imputation n'est nécessaire. Pour
+les valeurs aberrantes, on calcule pour chaque cycle la moyenne, l'écart-type et le maximum de
+chaque signal, puis on applique la règle de l'IQR ($x < Q_1 - 1{,}5\,\mathrm{IQR}$ ou
+$x > Q_3 + 1{,}5\,\mathrm{IQR}$) et un z-score robuste (médiane et MAD, seuil 3,5).
+\resnOutlierCycles{} cycles sont signalés par au moins un critère IQR
+(figure~\ref{fig:boxplots_cycles_bruts}).
+
+\figgen{boxplots_cycles_bruts}{Boxplots des statistiques par cycle utilisés pour détecter les valeurs aberrantes.}{1.0}
+
+\textbf{Décision : les cycles atypiques sont conservés.} Ce ne sont pas des erreurs de mesure
+mais des états physiques réels du banc (refroidisseur proche de la panne, accumulateur
+dégradé, régime transitoire). Les supprimer retirerait précisément les situations qu'un
+système de maintenance doit reconnaître, et de tels cycles existent dans le jeu de test.
+Leur influence est maîtrisée par la standardisation et par l'utilisation de modèles robustes
+(arbres et ensembles).
+
+\subsection{Encodage des variables catégorielles}
+Les capteurs ne fournissent que des variables continues. Les colonnes de \texttt{profile.txt}
+sont des niveaux ordinaux déjà numériques ; elles ne sont pas utilisées comme variables
+explicatives car ce sont des étiquettes d'état mesurées hors ligne, inconnues en production
+(les utiliser constituerait une fuite d'information). Aucun encodage one-hot n'est donc
+nécessaire ; la seule transformation est la binarisation de la cible.
+
+\subsection{Transformation en classification binaire et équilibre des classes}
+La cible est définie par
+\[
+  y = \begin{cases} 1 & \text{si la condition de la valve vaut } 100\,\% \text{ (optimale)},\\
+                    0 & \text{sinon (90, 80 ou 73\,\%)}. \end{cases}
+\]
+
+\figgen{distribution_classes}{Distribution des niveaux de la valve et des classes binaires (entraînement / test).}{1.0}
+
+Le jeu d'entraînement est quasiment équilibré (\restrainPosPct\,\% de cycles optimaux) : aucun
+rééchantillonnage n'est nécessaire, mais la validation croisée est stratifiée et l'on suit le
+F1-score et l'AUC en plus de l'accuracy. Le jeu de test est déséquilibré dans l'autre sens
+(\restestPosPct\,\% de cycles optimaux, soit \resnTestPos{} sur \resnTest).
+
+Le découpage imposé est \textbf{temporel}. Or les conditions des autres composants évoluent au
+cours de l'expérience (figure~\ref{fig:conditions_temporelles}) : les 205 cycles de test ont
+tous un refroidisseur à 100\,\% et un accumulateur majoritairement à 90 bar. Le jeu de test
+n'est donc pas distribué comme le jeu d'entraînement (\emph{dataset shift}), ce qui rend
+l'évaluation finale plus exigeante qu'une validation aléatoire.
+
+\figgen{conditions_temporelles}{Évolution des conditions des composants au fil des cycles ; la ligne pointillée sépare entraînement et test.}{1.0}
+
+\subsection{Visualisation des signaux}
+La figure~\ref{fig:signaux_moyens_par_valve} superpose le profil moyen d'un cycle pour chaque
+niveau de la valve. Le cycle comporte une phase sans pression (0 à 9\,s environ), une forte
+montée en pression vers 9,4\,s accompagnée d'un pic de débit, puis des paliers de charge qui
+changent toutes les 10\,s. Deux différences apparaissent nettement :
+\begin{itemize}[nosep]
+  \item la \textbf{montée en pression et le pic de débit arrivent d'autant plus tard que la
+        valve est dégradée} : c'est la signature directe d'un retard de commutation ;
+  \item sur les paliers suivants, la pression est légèrement plus haute et le débit plus bas
+        quand la valve est dégradée (pertes de charge plus importantes).
+\end{itemize}
+
+\figgen{signaux_moyens_par_valve}{Profil moyen de PS2 et FS1 sur un cycle selon la condition de la valve.}{1.0}
+\figgen{exemples_cycles}{Exemples de cycles bruts (vert : valve à 100\,\% ; rouge foncé : 73\,\%), cycle complet et zoom sur les 6 premières secondes.}{1.0}
+
+\subsection{Extraction de caractéristiques}
+Les 6600 points bruts d'un cycle sont très redondants et inadaptés à des modèles comme k-NN,
+Naive Bayes ou un arbre unique. Chaque signal est donc résumé par des descripteurs
+interprétables (tableau~\ref{tab:features}), soit \resnFeatures{} variables au total.
+
+\begin{table}[H]\centering\small
+\caption{Caractéristiques extraites pour chaque signal (PS2 et FS1).}\label{tab:features}
+\begin{tabularx}{\linewidth}{lXr}
+\toprule
+Famille & Descripteurs & Nombre\\
+\midrule
+Statistiques globales & moyenne, écart-type, min, max, médiane, quantiles 5/25/75/95\,\%, IQR, amplitude, RMS, asymétrie, aplatissement, instants du max et du min & 16\\
+Dynamique & moyenne de $|dx/dt|$, écart-type, max et min de la dérivée & 4\\
+Fenêtres temporelles & moyenne et écart-type sur 10 fenêtres de 6\,s & 20\\
+Spectre & part d'énergie dans 4 bandes logarithmiques, énergie totale (log) & 5\\
+\midrule
+Total par signal & & 45\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\capture{code_features}{Code de l'extraction de caractéristiques (module \texttt{valve\_ml/features.py}).}
+  {Capture de la cellule du notebook qui définit \texttt{extract\_signal\_features} et de la sortie « Matrice de caractéristiques : (2205, 90) ».}{6cm}
+
+\subsection{Analyse des corrélations}
+Toutes les analyses à partir de cette section sont faites sur les 2000 cycles d'entraînement
+uniquement, pour ne pas laisser d'information du test influencer les choix.
+
+\figgen{correlation_cible}{Les 15 variables les plus corrélées (Pearson) à la cible.}{0.75}
+\figgen{matrice_correlation}{Matrice de corrélation des 20 variables les plus liées à la cible.}{0.8}
+
+La matrice de corrélation montre de forts blocs de redondance : \respctHighCorrPairs\,\% des
+paires de variables ont une corrélation absolue supérieure à 0,95 (par exemple moyenne,
+médiane et RMS d'un même signal). Cette colinéarité gêne la régression logistique (coefficients
+instables) et viole l'hypothèse d'indépendance de Naive Bayes, d'où le filtre de corrélation
+de la section suivante. Les histogrammes et boxplots de la figure~\ref{fig:histogrammes_boxplots}
+montrent que plusieurs variables séparent nettement les deux classes. Les plus corrélées à
+la cible sont issues de la pression PS2 : moyenne sur la fenêtre 6--12\,s
+(\texttt{PS2\_w1\_mean}, $r=0{,}77$), part d'énergie haute fréquence
+(\texttt{PS2\_band3\_ratio}, $r=0{,}72$) et raideur maximale de la montée
+(\texttt{PS2\_d\_max}, $r=0{,}70$). Toutes décrivent la montée en pression autour de 9,4\,s.
+Les variables de débit FS1 sont moins corrélées ($|r|<0{,}5$) mais apportent une information
+complémentaire.
+
+\figgen{histogrammes_boxplots}{Histogrammes (haut) et boxplots (bas) par classe des six variables les plus discriminantes.}{1.0}
+
+\paragraph{Lien avec les autres composants.} La figure~\ref{fig:valve_vs_autres_conditions}
+et le V de Cramér (tableau~\ref{tab:cramer}) mesurent l'association entre la condition de la
+valve et celles des autres composants.
+
+\begin{table}[H]\centering\small
+\caption{Association entre la condition de la valve et les autres variables de \texttt{profile.txt} (V de Cramér, 2205 cycles).}\label{tab:cramer}
+\begin{tabular}{lcccc}
+\toprule
+& Refroidisseur & Pompe & Accumulateur & Indicateur de stabilité\\
+\midrule
+V de Cramér & 0,004 & 0,307 & 0,171 & 0,708\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Le refroidisseur est indépendant de la valve. Les associations avec la pompe,
+l'accumulateur et surtout l'indicateur de stabilité viennent du \textbf{plan d'expérience} et
+non d'un lien physique. En effet, chaque niveau dégradé de la valve (73, 80, 90\,\%) est testé
+exactement 120 fois pour chaque état de la pompe et 90 fois pour chaque état de
+l'accumulateur ; de plus, les 756 cycles « non stables » (phases de transition après un
+changement de configuration) ont tous été enregistrés avec une valve à 100\,\%. Ces variables
+ne sont donc pas des causes de la dégradation de la valve, et elles ne seraient de toute
+façon pas disponibles en production. La dégradation doit être détectée dans la
+\textbf{signature des signaux} de pression et de débit.
+
+\figgen{valve_vs_autres_conditions}{Proportion de cycles avec valve optimale selon l'état des autres composants.}{1.0}
+
+\subsection{Sélection de variables}
+Quatre familles de méthodes sont combinées :
+\begin{enumerate}[nosep]
+  \item \textbf{filtre de variance} : suppression des variables constantes ;
+  \item \textbf{filtre de corrélation} : pour chaque paire avec $|r|>0{,}95$ une seule variable est
+        gardée (\resnFeatures{} $\rightarrow$ \resnAfterCorr{} variables) ;
+  \item \textbf{méthodes univariées} : test ANOVA F et information mutuelle ;
+  \item \textbf{méthodes embarquées} : régression logistique pénalisée L1 (\resnLNonZero{}
+        coefficients non nuls pour $C=0{,}1$) et importance des variables d'une forêt aléatoire.
+\end{enumerate}
+
+\figgen{selection_variables}{Classement des variables selon l'ANOVA F, l'information mutuelle, la pénalisation L1 et la forêt aléatoire.}{1.0}
+
+Les méthodes s'accordent sur les deux variables les plus utiles, \texttt{PS2\_w1\_mean} et
+\texttt{PS2\_band3\_ratio} (meilleurs rangs moyens), ce qui renforce la confiance dans la
+sélection. Elles diffèrent ensuite : l'information mutuelle et la forêt aléatoire valorisent
+des variables à relation non monotone avec la cible (asymétrie, instant du maximum), que le
+test ANOVA F, qui ne mesure qu'un écart de moyennes, classe plus bas. La pénalisation L1 ne
+garde que \resnLNonZero{} variables, ce qui confirme que l'information est concentrée dans
+peu de descripteurs. Pour la modélisation, le filtre de corrélation et la
+sélection \texttt{SelectKBest} (ANOVA F) sont placés \textbf{à l'intérieur du pipeline} : ils sont
+réappris dans chaque pli de validation croisée, ce qui évite toute fuite d'information. Le
+nombre de variables $k$ est choisi en traçant l'AUC en validation croisée en fonction de $k$
+(figure~\ref{fig:choix_k}) : on retient par défaut le plus petit $k$ dont l'AUC est à moins de
+0,005 du maximum, soit $k=\reskDefault$ ; au-delà, l'AUC est saturée (proche de 1). Ensuite $k$ est de nouveau optimisé avec les
+hyperparamètres (section~\ref{sec:optim}).
+
+\figgen{choix_k}{AUC et F1 en validation croisée selon le nombre de variables retenues.}{1.0}
+
+% =====================================================================
+\section{Modélisation}
+
+\subsection{Pipeline commun}
+Tous les modèles partagent le même enchaînement, ce qui rend la comparaison équitable :
+\begin{center}
+\texttt{CorrelationFilter(0,95)} $\rightarrow$ \texttt{StandardScaler} $\rightarrow$
+\texttt{SelectKBest(ANOVA F, k)} $\rightarrow$ classifieur.
+\end{center}
+La standardisation est indispensable pour k-NN, le SVM et la régression logistique ; elle est
+neutre pour les arbres.
+
+\subsection{Choix et justification des modèles}
+Le tableau~\ref{tab:justif} résume les propriétés théoriques des modèles comparés et leur
+adéquation aux données : variables continues, en partie corrélées, avec un bruit de mesure
+et des cycles atypiques.
+
+\begin{table}[H]\centering\small
+\caption{Modèles comparés et justification.}\label{tab:justif}
+\begin{tabularx}{\linewidth}{>{\raggedright}p{2.6cm}>{\raggedright}p{2.6cm}X}
+\toprule
+Modèle & Nature & Adaptation aux données\\
+\midrule
+Régression logistique & linéaire, paramétrique & Référence simple et interprétable. Suffisante si les classes sont séparables linéairement dans l'espace des caractéristiques ; sensible à la colinéarité (traitée par le filtre de corrélation et la régularisation L1/L2).\\
+k-NN & non linéaire, à base d'instances & Frontière locale très flexible, sans hypothèse de distribution ; sensible aux échelles (standardisation), au bruit et à la dimension (d'où la sélection de variables).\\
+Arbre de décision & non linéaire, non paramétrique & Insensible aux échelles et aux valeurs extrêmes, règles lisibles ; variance élevée (sur-apprentissage) si la profondeur n'est pas limitée.\\
+Naive Bayes gaussien & probabiliste, génératif & Très rapide ; suppose des variables indépendantes et gaussiennes, hypothèses violées ici (variables corrélées, distributions multimodales) : sert de référence à biais élevé.\\
+SVM (noyau RBF) & non linéaire, marge maximale & Bien adapté aux variables continues standardisées de dimension moyenne ; la marge le rend robuste au bruit ; demande le réglage de $C$ et $\gamma$.\\
+Random Forest & ensemble (bagging) & Moyenne d'arbres décorrélés : réduit la variance, robuste au bruit, aux valeurs aberrantes et aux variables corrélées.\\
+Gradient Boosting, AdaBoost & ensemble (boosting) & Corrige séquentiellement les erreurs : réduit le biais ; doit être régularisé (taux d'apprentissage, profondeur, sous-échantillonnage).\\
+Stacking & ensemble hétérogène & Combine des modèles de biais différents (linéaire, noyau, arbres) par un méta-modèle logistique.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =====================================================================
+\section{Évaluation des modèles}
+
+\subsection{Protocole}
+Les modèles sont évalués par \textbf{validation croisée stratifiée à 5 plis} (mélangés,
+graine 42) sur les 2000 cycles d'entraînement. Pour chaque modèle on mesure l'accuracy, la
+précision, le rappel, le F1-score (classe positive : valve optimale) et l'aire sous la courbe
+ROC (AUC). Les scores sur les plis d'entraînement sont aussi relevés : l'écart
+entraînement--validation mesure la variance, le niveau du score de validation mesure le biais.
+
+\subsection{Comparaison des modèles avant optimisation}
+\tabgen{cv_base}{Validation croisée (5 plis) des modèles avec leurs hyperparamètres par défaut. « F1 train » est le F1 sur les plis d'entraînement, « Écart F1 » l'écart entraînement--validation.}{cv_base}
+\figgen{comparaison_modeles_base}{Comparaison des métriques en validation croisée avant optimisation.}{1.0}
+
+Le problème est très bien séparé dans l'espace des caractéristiques : tous les modèles sauf
+Naive Bayes dépassent 0,98 de F1 et 0,98 d'AUC. Les ensembles (forêt aléatoire, gradient
+boosting) et le SVM sont les meilleurs (F1 $\approx$ 0,995--0,997). La régression logistique,
+modèle linéaire, atteint déjà 0,99 de F1 : la frontière entre les classes est presque
+linéaire. Naive Bayes reste nettement en dessous (F1 $\approx$ 0,91) car ses hypothèses
+d'indépendance et de normalité sont violées. L'arbre de décision non élagué a l'écart
+entraînement--validation le plus grand (0,013), signe de variance.
+
+\subsection{Matrices de confusion et courbes ROC}
+Les prédictions hors-pli (\texttt{cross\_val\_predict}) permettent de construire, pour chaque
+modèle, une matrice de confusion et une courbe ROC sur l'ensemble des 2000 cycles
+d'entraînement, chaque cycle étant prédit par un modèle qui ne l'a pas vu.
+
+\figgen{matrices_confusion_cv}{Matrices de confusion en validation croisée (seuil 0,5).}{1.0}
+\figgen{roc_cv}{Courbes ROC en validation croisée.}{0.62}
+
+\subsection{Compromis biais / variance}
+Les courbes d'apprentissage (figure~\ref{fig:courbes_apprentissage}) se lisent ainsi : un modèle
+à forte \textbf{variance} (arbre non élagué, k-NN avec peu de voisins) a un score
+d'entraînement proche de 1 et un écart important avec la validation ; un modèle à fort
+\textbf{biais} (Naive Bayes) a des courbes d'entraînement et de validation basses et proches.
+Le bon compromis est obtenu par les modèles dont la courbe de validation est haute et proche
+de la courbe d'entraînement.
+
+Ici, l'arbre de décision et la forêt aléatoire ont un score d'entraînement de 1 quelle que
+soit la taille du jeu : ils mémorisent les données. Pour l'arbre, l'écart reste visible même
+avec 1600 cycles (variance élevée) ; la forêt réduit cet écart grâce au bagging. Naive Bayes
+présente deux courbes basses et confondues autour de 0,90 : c'est un biais élevé, que plus
+de données ne corrigera pas. La régression logistique, le SVM et k-NN ont des courbes qui
+convergent vers 0,99--1 avec un faible écart : c'est le meilleur compromis biais/variance.
+
+\figgen{courbes_apprentissage}{Courbes d'apprentissage (F1) : entraînement en rouge, validation en vert.}{1.0}
+
+\subsection{Robustesse du protocole de validation}
+Les cycles successifs partagent les mêmes conditions de fonctionnement, donc une validation à
+plis mélangés place dans le pli de validation des cycles très semblables à ceux de
+l'entraînement. Le tableau~\ref{tab:robustesse} compare cette validation à une validation à
+\textbf{plis contigus} (sans mélange), plus proche de la situation réelle où l'on prédit des
+cycles futurs.
+
+\tabgen{robustesse}{Validation à plis mélangés vs plis contigus.}{robustesse}
+
+Le résultat est net : avec des plis contigus, le F1 des ensembles d'arbres chute (0,997
+$\rightarrow$ 0,935 pour la forêt aléatoire, 0,997 $\rightarrow$ 0,925 pour le gradient
+boosting) alors que la régression logistique et le SVM restent vers 0,98. La validation
+mélangée est donc optimiste, et les performances sur une période non vue dépendent de la
+capacité du modèle à extrapoler à des conditions de fonctionnement nouvelles.
+
+% =====================================================================
+\section{Optimisation des hyperparamètres}\label{sec:optim}
+
+\subsection{Méthodes}
+\begin{itemize}[nosep]
+  \item \textbf{Grid Search} (recherche exhaustive) pour les modèles à espace de recherche
+        réduit : régression logistique ($C$, pénalité L1/L2), k-NN (nombre de voisins,
+        pondération, distance), arbre de décision (profondeur, taille minimale des feuilles,
+        critère), Naive Bayes (lissage de variance) et SVM ($C$, $\gamma$) ;
+  \item \textbf{Random Search} (40 tirages) pour Random Forest et Gradient Boosting, dont
+        l'espace (nombre d'arbres, profondeur, taux d'apprentissage, sous-échantillonnage\ldots)
+        est trop grand pour une recherche exhaustive.
+\end{itemize}
+Le nombre de variables $k$ est optimisé conjointement. Le critère est l'AUC en validation
+croisée stratifiée à 5 plis ; le pipeline complet (filtre, standardisation, sélection,
+modèle) est réappris dans chaque pli. Enfin, un \textbf{stacking} des trois meilleurs modèles
+optimisés est construit.
+
+\capture{gridsearch_sortie}{Exécution des recherches d'hyperparamètres (sortie du notebook).}
+  {Capture de la sortie de la cellule d'optimisation (section 4) : une ligne par modèle avec AUC, durée et meilleurs paramètres.}{5.5cm}
+
+\subsection{Résultats}
+\tabgen{tuning}{Gain apporté par l'optimisation (AUC en validation croisée).}{tuning}
+\tabgen{params}{Meilleurs hyperparamètres trouvés.}{params}
+\tabgen{cv_opt}{Validation croisée des modèles optimisés.}{cv_opt}
+\figgen{avant_apres_optimisation}{F1 et AUC en validation croisée avant et après optimisation.}{1.0}
+
+\subsection{Choix du modèle final}
+On retient le modèle ayant la meilleure AUC en validation croisée ; en cas de quasi-égalité
+(écart inférieur à 0,002) on préfère le modèle le plus simple puis celui dont l'écart
+entraînement--validation est le plus faible, c'est-à-dire le meilleur compromis
+biais/variance. Le modèle retenu est \textbf{\resfinalModel} (AUC en validation croisée
+\resfinalCvAuc, F1 \resfinalCvFone, accuracy \resfinalCvAcc), avec une pénalité L1
+($C=0{,}1$) et $k=20$ variables.
+
+Après optimisation, presque tous les modèles atteignent une AUC de 1,000 en validation
+croisée : le critère est \textbf{saturé} et ne permet plus de les départager. La règle de
+départage choisit alors le modèle le plus simple, qui a aussi le plus petit écart
+entraînement--validation et les meilleurs scores en validation à plis contigus
+(tableau~\ref{tab:robustesse}). Ce choix est cohérent avec toutes les informations
+disponibles avant le test.
+
+% =====================================================================
+\section{Évaluation finale sur l'échantillon de test}
+
+Le modèle final est entraîné sur les 2000 premiers cycles puis évalué une seule fois sur les
+cycles 2001 à 2205. Les autres modèles optimisés sont évalués à titre de comparaison
+seulement : le choix a été fait avant, sur la validation croisée.
+
+\begin{table}[H]\centering\small
+\caption{Performances du modèle final (\resfinalModel) sur le test.}\label{tab:final}
+\begin{tabular}{ccccc}
+\toprule
+Accuracy & Précision & Rappel & F1 & AUC\\
+\midrule
+\restestAccuracy & \restestPrecision & \restestRecall & \restestFone & \restestRocauc\\
+\bottomrule
+\end{tabular}
+\quad
+\begin{tabular}{lcc}
+\toprule
+& prédit non opt. & prédit optimale\\
+\midrule
+réel non optimale & \restestTN & \restestFP\\
+réel optimale & \restestFN & \restestTP\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\tabgen{test}{Performances de tous les modèles optimisés sur le test (comparaison).}{test}
+\figgen{test_final}{Matrice de confusion du modèle final et courbes ROC de tous les modèles sur le test.}{1.0}
+
+Le modèle final ne fait \textbf{aucun faux négatif} (rappel 1) mais \resnTestErrors{} faux
+positifs : des cycles à valve non optimale prédits optimaux. Son AUC sur le test vaut
+pourtant \restestRocauc : les probabilités \emph{classent} parfaitement les cycles, mais le
+seuil de 0,5 appris sur l'entraînement n'est plus adapté au test. À l'inverse, le SVM, la
+forêt aléatoire, le gradient boosting et l'arbre de décision optimisés obtiennent 100\,\% sur
+le test (tableau~\ref{tab:test}).
+
+\subsection{Analyse des erreurs}
+Le tableau~\ref{tab:erreurs_valve} détaille les erreurs selon le niveau réel de la valve et la
+figure~\ref{fig:probas_test} montre la probabilité prédite pour chaque cycle de test.
+
+\tabgen{erreurs_valve}{Erreurs du modèle final sur le test selon la condition réelle de la valve.}{erreurs_valve}
+\figgen{probas_test}{Probabilité prédite d'une valve optimale pour chaque cycle de test ; les erreurs sont entourées.}{1.0}
+
+\textbf{Toutes les erreurs concernent des valves à 90\,\%} (léger retard), soit le niveau le plus
+proche de l'optimum ; les niveaux 80 et 73\,\% sont parfaitement reconnus. Sur la
+figure~\ref{fig:probas_test}, ces cycles ont une probabilité entre 0,5 et 0,75 : ils sont mieux
+classés que les vrais cycles optimaux (probabilité proche de 1) mais restent au-dessus du
+seuil. L'explication est le décalage de distribution décrit en section 2 : dans le test,
+69\,\% des cycles ont un accumulateur à 90\,bar (33\,\% à l'entraînement) et tous ont un
+refroidisseur à 100\,\%. Ces conditions modifient légèrement le niveau moyen de la pression,
+donc la valeur de \texttt{PS2\_w1\_mean} sur laquelle repose presque entièrement la régression
+logistique, et la poussent juste au-dessus du seuil pour les valves à 90\,\%. Les modèles non
+linéaires, qui découpent l'espace en plusieurs régions, sont moins sensibles à ce décalage.
+
+\textbf{Leçon.} On ne change pas le modèle après avoir vu le test : ce serait ajuster le choix
+sur le test, et le score annoncé ne serait plus une estimation honnête. Mais ce résultat
+montre que, quand le critère de sélection est saturé, il faut un critère plus exigeant
+(validation à plis contigus en F1, ou validation par groupes de conditions de
+fonctionnement), et qu'en production un SVM ou une forêt aléatoire serait préférable, avec
+une surveillance de la calibration du seuil.
+
+% =====================================================================
+\section{Interprétation : causes d'une valve non optimale}
+L'importance par permutation (figure~\ref{fig:importance_permutation}) mesure la baisse
+d'AUC sur le test quand on mélange une variable ; elle ne dépend pas du type de modèle.
+
+\figgen{importance_permutation}{Importance par permutation des variables du modèle final (test).}{0.75}
+
+Le modèle final repose presque entièrement sur une seule variable, \texttt{PS2\_w1\_mean}, la
+pression moyenne entre 6 et 12\,s : la mélanger fait perdre 0,57 point d'AUC, alors que les
+autres variables ont une importance quasi nulle (la pénalité L1 a annulé leurs coefficients
+ou elles sont redondantes avec elle).
+
+\paragraph{Interprétation physique.} Cette fenêtre contient la montée en pression de 9,4\,s.
+Si la valve commute en retard, la pression monte plus tard, donc la pression moyenne sur la
+fenêtre est plus faible. Pour le vérifier, on mesure directement l'instant où PS2 dépasse
+50\,bar après 5\,s (figure~\ref{fig:instant_commutation}). Sur l'entraînement, cet instant vaut
+en moyenne \resriseHundred\,s pour une valve à 100\,\%, \resriseNinety\,s à 90\,\%,
+\resriseEighty\,s à 80\,\% et \resriseSeventythree\,s à 73\,\%, avec une dispersion de quelques
+millisecondes seulement et \textbf{sans dépendance à l'état de l'accumulateur}.
+
+\figgen{instant_commutation}{Instant où la pression PS2 dépasse 50 bar, selon la condition de la valve (entraînement et test).}{0.8}
+
+\textbf{La cause d'une valve non optimale est donc un retard de commutation} : dès le niveau
+90\,\%, la montée en pression arrive environ \resdelayNinetyMs\,ms plus tard, et ce retard
+grandit avec la dégradation. C'est cette signature que tous les modèles exploitent,
+directement (instant du maximum, raideur de la montée) ou indirectement (moyenne de pression
+sur la fenêtre, énergie haute fréquence).
+
+\paragraph{Expérience a posteriori.} Un classifieur logistique entraîné sur cette seule
+variable obtient sur le test une accuracy de \resoneFeatTestAcc{} et un F1 de
+\resoneFeatTestFone. Cette expérience a été menée après l'évaluation finale et ne remplace pas
+le modèle choisi ; elle montre qu'une variable directement liée au mécanisme physique (un
+instant, plutôt qu'un niveau de pression) est beaucoup plus robuste aux changements de
+conditions de fonctionnement.
+
+% =====================================================================
+\section{Bonus réalisés}\label{sec:bonus}
+
+\subsection{Tests unitaires}
+Le dossier \texttt{tests/} contient 11 tests \texttt{pytest} qui vérifient, sur des signaux
+simulés : la lecture des fichiers et la numérotation des cycles, la binarisation de la cible,
+le découpage 2000\,/\,205 sans recouvrement, la valeur des caractéristiques sur un signal
+connu, la somme des parts d'énergie spectrale (égale à 1), le filtre de corrélation, le bon
+fonctionnement des pipelines et l'API de l'application web.
+\begin{lstlisting}[language=bash]
+python -m pytest -q
+\end{lstlisting}
+\capture{tests_pytest}{Exécution des tests unitaires.}
+  {Capture du terminal après \texttt{python -m pytest -q} (« 11 passed »).}{4cm}
+
+\subsection{Conteneurisation}
+Le \texttt{Dockerfile} construit une image Python 3.11 contenant le code, les dépendances et le
+modèle entraîné. Elle permet à un tiers d'exécuter le projet sans rien installer :
+\begin{lstlisting}[language=bash]
+docker build -t valve-ml .
+docker run --rm -p 5000:5000 valve-ml                       # application web
+docker run --rm valve-ml python -m pytest -q                 # tests
+docker run --rm -v "$PWD/data:/app/data" -v "$PWD/rapport:/app/rapport" valve-ml \
+  jupyter nbconvert --to notebook --execute notebooks/projet_valve.ipynb --output projet_valve.ipynb
+\end{lstlisting}
+\capture{docker}{Construction et exécution du conteneur Docker.}
+  {Capture du terminal montrant \texttt{docker build} terminé puis \texttt{docker run} de l'application.}{5cm}
+
+\subsection{Application web}
+L'application Flask (\texttt{app/app.py}) charge le modèle final et renvoie, pour un numéro de
+cycle donné, la prédiction, la probabilité associée, la condition réelle et si le cycle
+appartient au jeu d'entraînement ou de test. Une API JSON est aussi disponible :
+\texttt{GET /api/predict?cycle=2050}.
+\capture{appli_web}{Application web : prédiction pour un cycle du jeu de test.}
+  {Capture du navigateur sur \texttt{http://localhost:5000/?cycle=2050} (ou un autre cycle de test) montrant le résultat.}{7cm}
+
+\subsection{Dépôt GitHub}
+\capture{github}{Dépôt GitHub du projet.}
+  {Capture de la page d'accueil du dépôt GitHub (arborescence et README). Lien du dépôt : [à compléter].}{6cm}
+
+% =====================================================================
+\section{Limites et perspectives}
+\begin{itemize}
+  \item \textbf{Décalage de distribution.} Le test correspond à une période où l'accumulateur
+        est fortement dégradé et le refroidisseur en parfait état. Les performances sur le test
+        doivent donc être lues comme une mesure de robustesse à des conditions peu vues à
+        l'entraînement.
+  \item \textbf{Critère de sélection saturé.} L'AUC en validation croisée vaut 1 pour presque
+        tous les modèles ; la validation à plis contigus, ou par groupes de conditions de
+        fonctionnement, devrait servir directement à l'optimisation et au choix du modèle.
+  \item \textbf{Calibration du seuil.} L'AUC du modèle final sur le test est parfaite : un seuil
+        recalibré périodiquement sur des cycles récents étiquetés corrigerait ses erreurs.
+  \item \textbf{Caractéristiques physiques.} Ajouter explicitement l'instant de commutation (et
+        celui du pic de débit) aux variables rendrait les modèles plus robustes.
+  \item \textbf{Capteurs.} Seuls PS2 et FS1 sont autorisés ; d'autres capteurs du banc (PS1,
+        EPS1, températures) pourraient améliorer la robustesse.
+  \item \textbf{Approches sans extraction manuelle.} Un réseau convolutif 1D sur les signaux
+        bruts, ou des caractéristiques automatiques (\emph{tsfresh}), sont des pistes
+        naturelles.
+  \item \textbf{Classification multi-classe.} Prédire le niveau exact (100, 90, 80, 73\,\%)
+        permettrait de planifier la maintenance avant la panne.
+\end{itemize}
+
+% =====================================================================
+\section{Conclusion}
+Ce projet a mis en place une chaîne complète de maintenance prédictive : contrôle de qualité,
+construction de la cible binaire, analyse exploratoire, extraction de \resnFeatures{}
+caractéristiques physiques, sélection de variables sans fuite d'information, comparaison de
+neuf modèles, évaluation par validation croisée stratifiée, analyse biais/variance et
+optimisation des hyperparamètres par Grid Search et Random Search. Le modèle retenu,
+\resfinalModel, obtient sur les \resnTest{} cycles de test une accuracy de \restestAccuracy, un
+F1 de \restestFone{} et une AUC de \restestRocauc. Ses erreurs viennent d'un seuil décalé par
+le changement de conditions de fonctionnement entre les périodes d'entraînement et de test ;
+les modèles non linéaires optimisés atteignent 100\,\% sur le test.
+
+Sur le plan métier, l'analyse répond à la question posée : une valve non optimale se
+reconnaît à un \textbf{retard de la montée en pression} dans le cycle, mesurable dès un
+léger retard de commutation (niveau 90\,\%) et indépendant de l'état des autres composants.
+Surveiller cet instant de commutation constitue un indicateur simple et robuste de
+maintenance prédictive.
+
+% =====================================================================
+\appendix
+\section{Reproduire les résultats}
+\begin{lstlisting}[language=bash]
+pip install -r requirements.txt
+# placer PS2.txt, FS1.txt et profile.txt dans data/
+cd notebooks && jupyter nbconvert --to notebook --execute projet_valve.ipynb --output projet_valve.ipynb
+cd ../rapport && pdflatex rapport.tex && pdflatex rapport.tex
+python ../app/app.py
+\end{lstlisting}
+
+\section*{Référence}
+N. Helwig, E. Pignanelli, A. Schütze, \emph{Condition monitoring of a complex hydraulic system
+using multivariate statistics}, Proc. I2MTC-2015, IEEE International Instrumentation and
+Measurement Technology Conference, 2015. Jeu de données : UCI Machine Learning Repository,
+\emph{Condition monitoring of hydraulic systems}.
+
+\end{document}

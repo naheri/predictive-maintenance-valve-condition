@@ -1,0 +1,13 @@
+\begin{tabular}{lp{11cm}}
+\toprule
+Modèle & Meilleurs hyperparamètres \\
+\midrule
+Régression logistique & \texttt{C=0.1, penalty=l1, solver=liblinear, k=20} \\
+k-NN & \texttt{n\_neighbors=7, p=2, weights=distance, k=5} \\
+Arbre de décision & \texttt{criterion=gini, max\_depth=3, min\_samples\_leaf=5, k=20} \\
+Naive Bayes & \texttt{var\_smoothing=0.001, k=10} \\
+SVM (RBF) & \texttt{C=10, gamma=0.001, k=40} \\
+Random Forest & \texttt{max\_depth=10, max\_features=log2, min\_samples\_leaf=3, n\_estimators=314, k=20} \\
+Gradient Boosting & \texttt{learning\_rate=0.07357, max\_depth=2, n\_estimators=351, subsample=0.8428, k=40} \\
+\bottomrule
+\end{tabular}
